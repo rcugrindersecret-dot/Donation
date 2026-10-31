@@ -6,7 +6,10 @@ const app = express();
 app.use(express.json({ limit: '32kb' }));
 
 const PORT = process.env.PORT || 10000;
+
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const FAKE_WEBHOOK_URL = process.env.FAKE_DISCORD_WEBHOOK_URL;
+
 const API_KEY = process.env.DONATION_API_KEY;
 
 const TIERS = [
@@ -134,7 +137,7 @@ function constantTimeEqual(a, b) {
 app.get('/', (_req, res) => res.status(200).send('Donation card service is running.'));
 
 app.post('/donation', async (req, res) => {
-  if (!API_KEY || !WEBHOOK_URL) {
+if (!API_KEY || !WEBHOOK_URL || !FAKE_WEBHOOK_URL) {
     return res.status(503).json({ error: 'Service environment is not configured.' });
   }
   if (!constantTimeEqual(req.get('x-api-key'), API_KEY)) {
@@ -183,11 +186,11 @@ app.post('/donation', async (req, res) => {
 
     form.append('files[0]', new Blob([png], { type: 'image/png' }), 'donation.png');
 
-    const discordResponse = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      body: form,
-      signal: AbortSignal.timeout(20000)
-    });
+const webhookUrl = req.body?.fake === true
+    ? FAKE_WEBHOOK_URL
+    : WEBHOOK_URL;
+
+const discordResponse = await fetch(webhookUrl, {
     if (!discordResponse.ok) {
       const details = await discordResponse.text();
       console.error('Discord webhook error:', discordResponse.status, details);
