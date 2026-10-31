@@ -172,13 +172,15 @@ app.post('/donation', async (req, res) => {
     const robuxEmoji = process.env.ROBUX_EMOJI || '💰';
     const message = `${tier.emoji} \`@${donorName}\` donated ${robuxEmoji} **${formatNumber(amount)} Robux** to \`@${recipientName}\``;
 
-    // Keep the text and generated image together in one standard Discord embed.
+
+    // Send message outside the embed, with one image-only embed.
     form.append('payload_json', JSON.stringify({
+      content: message,
       embeds: [{
-        description: message,
-        image: { url: 'attachment://donation.png' }
+      image: { url: 'attachment://donation.png' }
       }]
     }));
+
     form.append('files[0]', new Blob([png], { type: 'image/png' }), 'donation.png');
 
     const discordResponse = await fetch(WEBHOOK_URL, {
